@@ -11,6 +11,8 @@ import { DealSelector } from '@/components/DealSelector';
 import { InvoiceGenerator } from '@/components/InvoiceGenerator';
 import { InvoiceHistory } from '@/components/InvoiceHistory';
 import { MonthlyStats } from '@/components/MonthlyStats';
+import { ModeToggle } from '@/components/ModeToggle';
+import { BulkSender } from '@/components/BulkSender';
 import { toast } from 'sonner';
 
 const Index = () => {
@@ -19,6 +21,7 @@ const Index = () => {
   const [selectedDeal, setSelectedDeal] = useState<HubSpotDeal | null>(null);
   const [refreshTrigger, setRefreshTrigger] = useState(0);
   const [activeTab, setActiveTab] = useState('invoice');
+  const [isBulkMode, setIsBulkMode] = useState(false);
 
   useEffect(() => {
     // Check if already authenticated
@@ -99,60 +102,73 @@ const Index = () => {
       {/* Main content */}
       <main className="max-w-6xl mx-auto px-4 py-6">
         <MonthlyStats />
-        <div className="grid grid-cols-1 xl:grid-cols-3 gap-6">
-          {/* Deal selector - Always visible */}
-          <div className="xl:col-span-1">
-            <DealSelector
-              selectedDeal={selectedDeal}
-              onDealSelect={handleDealSelect}
-            />
-          </div>
+        
+        {/* Mode Toggle */}
+        <ModeToggle 
+          isBulkMode={isBulkMode} 
+          onModeChange={setIsBulkMode}
+        />
 
-          {/* Main content area */}
-          <div className="xl:col-span-2">
-            {selectedDeal ? (
-              <Tabs value={activeTab} onValueChange={setActiveTab}>
-                <TabsList className="grid w-full grid-cols-2">
-                  <TabsTrigger value="invoice" className="gap-2">
-                    <FileText className="h-4 w-4" />
-                    Factuur Verzenden
-                  </TabsTrigger>
-                  <TabsTrigger value="history" className="gap-2">
-                    <History className="h-4 w-4" />
-                    Geschiedenis
-                  </TabsTrigger>
-                </TabsList>
-                
-                <TabsContent value="invoice" className="mt-6">
-                  <InvoiceGenerator
-                    deal={selectedDeal}
-                    onInvoiceSent={handleInvoiceSent}
-                  />
-                </TabsContent>
-                
-                <TabsContent value="history" className="mt-6">
-                  <InvoiceHistory
-                    dealId={selectedDeal.id}
-                    refreshTrigger={refreshTrigger}
-                  />
-                </TabsContent>
-              </Tabs>
-            ) : (
-              <div className="text-center py-16">
-                <div className="w-16 h-16 bg-muted rounded-full flex items-center justify-center mx-auto mb-4">
-                  <FileText className="h-8 w-8 text-muted-foreground" />
+        {isBulkMode ? (
+          /* Bulk Mode */
+          <BulkSender />
+        ) : (
+          /* Standard Mode */
+          <div className="grid grid-cols-1 xl:grid-cols-3 gap-6">
+            {/* Deal selector - Always visible */}
+            <div className="xl:col-span-1">
+              <DealSelector
+                selectedDeal={selectedDeal}
+                onDealSelect={handleDealSelect}
+              />
+            </div>
+
+            {/* Main content area */}
+            <div className="xl:col-span-2">
+              {selectedDeal ? (
+                <Tabs value={activeTab} onValueChange={setActiveTab}>
+                  <TabsList className="grid w-full grid-cols-2">
+                    <TabsTrigger value="invoice" className="gap-2">
+                      <FileText className="h-4 w-4" />
+                      Factuur Verzenden
+                    </TabsTrigger>
+                    <TabsTrigger value="history" className="gap-2">
+                      <History className="h-4 w-4" />
+                      Geschiedenis
+                    </TabsTrigger>
+                  </TabsList>
+                  
+                  <TabsContent value="invoice" className="mt-6">
+                    <InvoiceGenerator
+                      deal={selectedDeal}
+                      onInvoiceSent={handleInvoiceSent}
+                    />
+                  </TabsContent>
+                  
+                  <TabsContent value="history" className="mt-6">
+                    <InvoiceHistory
+                      dealId={selectedDeal.id}
+                      refreshTrigger={refreshTrigger}
+                    />
+                  </TabsContent>
+                </Tabs>
+              ) : (
+                <div className="text-center py-16">
+                  <div className="w-16 h-16 bg-muted rounded-full flex items-center justify-center mx-auto mb-4">
+                    <FileText className="h-8 w-8 text-muted-foreground" />
+                  </div>
+                  <h3 className="text-lg font-medium mb-2">Selecteer een Deal</h3>
+                  <p className="text-muted-foreground text-sm">
+                    Kies een deal uit de lijst om een Peppol-factuur te verzenden
+                  </p>
                 </div>
-                <h3 className="text-lg font-medium mb-2">Selecteer een Deal</h3>
-                <p className="text-muted-foreground text-sm">
-                  Kies een deal uit de lijst om een Peppol-factuur te verzenden
-                </p>
-              </div>
-            )}
+              )}
+            </div>
           </div>
-        </div>
+        )}
 
-        {/* Global history at bottom for context */}
-        {!selectedDeal && (
+        {/* Global history at bottom for context - only in standard mode */}
+        {!isBulkMode && !selectedDeal && (
           <div className="mt-8">
             <InvoiceHistory refreshTrigger={refreshTrigger} />
           </div>

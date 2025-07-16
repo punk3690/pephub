@@ -97,6 +97,10 @@ export class HubSpotService {
     };
   }
 
+  async getDeals(limit: number = 50): Promise<HubSpotDeal[]> {
+    return this.getDealsForPortal(limit);
+  }
+
   async getDealsForPortal(limit: number = 50): Promise<HubSpotDeal[]> {
     // Mock multiple deals
     const deals: HubSpotDeal[] = [
