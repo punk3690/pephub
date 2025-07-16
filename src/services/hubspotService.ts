@@ -53,28 +53,452 @@ export class HubSpotService {
   }
 
   async getCompany(companyId: string): Promise<HubSpotCompany | null> {
-    // Mock company data
-    return {
-      id: companyId,
-      properties: {
-        name: 'Acme Corporation',
-        domain: 'acme.com',
-        address: 'Hoofdstraat 123',
-        address2: '',
-        city: 'Amsterdam',
-        state: 'Noord-Holland',
-        zip: '1000 AA',
-        country: 'Netherlands',
-        phone: '+31 20 123 4567',
-        website: 'https://acme.com',
-        industry: 'Software',
-        numberofemployees: '100-500',
-        annualrevenue: '10000000',
-        peppol_participant_id: '0088:7318900000000',
-        vat_number: 'NL123456789B01',
-        company_registration_number: '12345678'
+    // Mock company data with different companies
+    const companies: { [key: string]: HubSpotCompany } = {
+      'company_456': {
+        id: companyId,
+        properties: {
+          name: 'Acme Corporation',
+          domain: 'acme.com',
+          address: 'Hoofdstraat 123',
+          address2: '',
+          city: 'Amsterdam',
+          state: 'Noord-Holland',
+          zip: '1000 AA',
+          country: 'Netherlands',
+          phone: '+31 20 123 4567',
+          website: 'https://acme.com',
+          industry: 'Software',
+          numberofemployees: '100-500',
+          annualrevenue: '10000000',
+          peppol_participant_id: '0088:7318900000000',
+          vat_number: 'NL123456789B01',
+          company_registration_number: '12345678'
+        }
+      },
+      'company_789': {
+        id: companyId,
+        properties: {
+          name: 'Tech Solutions B.V.',
+          domain: 'techsolutions.nl',
+          address: 'Damrak 70',
+          address2: '',
+          city: 'Amsterdam',
+          state: 'Noord-Holland',
+          zip: '1012 LP',
+          country: 'Netherlands',
+          phone: '+31 20 555 0123',
+          website: 'https://techsolutions.nl',
+          industry: 'Technology',
+          numberofemployees: '50-100',
+          annualrevenue: '5000000',
+          peppol_participant_id: '0088:7318900000001',
+          vat_number: 'NL987654321B01',
+          company_registration_number: '87654321'
+        }
+      },
+      'company_101': {
+        id: companyId,
+        properties: {
+          name: 'Digital Marketing Plus',
+          domain: 'digitalmarketing.com',
+          address: 'Kalverstraat 92',
+          address2: '',
+          city: 'Amsterdam',
+          state: 'Noord-Holland',
+          zip: '1012 PH',
+          country: 'Netherlands',
+          phone: '+31 20 555 0234',
+          website: 'https://digitalmarketing.com',
+          industry: 'Marketing',
+          numberofemployees: '25-50',
+          annualrevenue: '2000000',
+          peppol_participant_id: '0088:7318900000002',
+          vat_number: 'NL456789123B01',
+          company_registration_number: '45678912'
+        }
+      },
+      'company_2001': {
+        id: companyId,
+        properties: {
+          name: 'WebDev Studio',
+          domain: 'webdev.nl',
+          address: 'Prinsengracht 263',
+          address2: '',
+          city: 'Amsterdam',
+          state: 'Noord-Holland',
+          zip: '1016 GV',
+          country: 'Netherlands',
+          phone: '+31 20 555 0345',
+          website: 'https://webdev.nl',
+          industry: 'Web Development',
+          numberofemployees: '10-25',
+          annualrevenue: '1500000',
+          peppol_participant_id: '0088:7318900000003',
+          vat_number: 'NL789123456B01',
+          company_registration_number: '78912345'
+        }
+      },
+      'company_2002': {
+        id: companyId,
+        properties: {
+          name: 'SEO Masters',
+          domain: 'seomasters.nl',
+          address: 'Nieuwezijds Voorburgwal 147',
+          address2: '',
+          city: 'Amsterdam',
+          state: 'Noord-Holland',
+          zip: '1012 RJ',
+          country: 'Netherlands',
+          phone: '+31 20 555 0456',
+          website: 'https://seomasters.nl',
+          industry: 'Digital Marketing',
+          numberofemployees: '5-10',
+          annualrevenue: '800000',
+          peppol_participant_id: '0088:7318900000004',
+          vat_number: 'NL321654987B01',
+          company_registration_number: '32165498'
+        }
+      },
+      'company_2003': {
+        id: companyId,
+        properties: {
+          name: 'E-commerce Solutions',
+          domain: 'ecommerce.nl',
+          address: 'Spui 21',
+          address2: '',
+          city: 'Amsterdam',
+          state: 'Noord-Holland',
+          zip: '1012 WX',
+          country: 'Netherlands',
+          phone: '+31 20 555 0567',
+          website: 'https://ecommerce.nl',
+          industry: 'E-commerce',
+          numberofemployees: '25-50',
+          annualrevenue: '3000000',
+          peppol_participant_id: '0088:7318900000005',
+          vat_number: 'NL654987321B01',
+          company_registration_number: '65498732'
+        }
+      },
+      'company_2004': {
+        id: companyId,
+        properties: {
+          name: 'Mobile App Factory',
+          domain: 'mobileapps.nl',
+          address: 'Rokin 75',
+          address2: '',
+          city: 'Amsterdam',
+          state: 'Noord-Holland',
+          zip: '1012 KL',
+          country: 'Netherlands',
+          phone: '+31 20 555 0678',
+          website: 'https://mobileapps.nl',
+          industry: 'Mobile Development',
+          numberofemployees: '15-25',
+          annualrevenue: '2200000',
+          peppol_participant_id: '0088:7318900000006',
+          vat_number: 'NL987321654B01',
+          company_registration_number: '98732165'
+        }
+      },
+      'company_2005': {
+        id: companyId,
+        properties: {
+          name: 'Database Experts B.V.',
+          domain: 'dbexperts.nl',
+          address: 'Leidsestraat 106',
+          address2: '',
+          city: 'Amsterdam',
+          state: 'Noord-Holland',
+          zip: '1017 PG',
+          country: 'Netherlands',
+          phone: '+31 20 555 0789',
+          website: 'https://dbexperts.nl',
+          industry: 'Database Services',
+          numberofemployees: '10-15',
+          annualrevenue: '1800000',
+          peppol_participant_id: '0088:7318900000007',
+          vat_number: 'NL147258369B01',
+          company_registration_number: '14725836'
+        }
+      },
+      'company_2006': {
+        id: companyId,
+        properties: {
+          name: 'IT Consultancy Pro',
+          domain: 'itconsultancy.nl',
+          address: 'Herengracht 481',
+          address2: '',
+          city: 'Amsterdam',
+          state: 'Noord-Holland',
+          zip: '1017 BT',
+          country: 'Netherlands',
+          phone: '+31 20 555 0890',
+          website: 'https://itconsultancy.nl',
+          industry: 'IT Consulting',
+          numberofemployees: '20-30',
+          annualrevenue: '2500000',
+          peppol_participant_id: '0088:7318900000008',
+          vat_number: 'NL369258147B01',
+          company_registration_number: '36925814'
+        }
+      },
+      'company_2007': {
+        id: companyId,
+        properties: {
+          name: 'Cloud Solutions B.V.',
+          domain: 'cloudsolutions.nl',
+          address: 'Keizersgracht 324',
+          address2: '',
+          city: 'Amsterdam',
+          state: 'Noord-Holland',
+          zip: '1016 EZ',
+          country: 'Netherlands',
+          phone: '+31 20 555 0901',
+          website: 'https://cloudsolutions.nl',
+          industry: 'Cloud Services',
+          numberofemployees: '30-50',
+          annualrevenue: '4000000',
+          peppol_participant_id: '0088:7318900000009',
+          vat_number: 'NL258147369B01',
+          company_registration_number: '25814736'
+        }
+      },
+      'company_2008': {
+        id: companyId,
+        properties: {
+          name: 'Security First',
+          domain: 'securityfirst.nl',
+          address: 'Vijzelstraat 68',
+          address2: '',
+          city: 'Amsterdam',
+          state: 'Noord-Holland',
+          zip: '1017 HL',
+          country: 'Netherlands',
+          phone: '+31 20 555 0012',
+          website: 'https://securityfirst.nl',
+          industry: 'Cybersecurity',
+          numberofemployees: '15-20',
+          annualrevenue: '1900000',
+          peppol_participant_id: '0088:7318900000010',
+          vat_number: 'NL741852963B01',
+          company_registration_number: '74185296'
+        }
+      },
+      'company_2009': {
+        id: companyId,
+        properties: {
+          name: 'API Integration Co',
+          domain: 'apiintegration.nl',
+          address: 'Reguliersgracht 36',
+          address2: '',
+          city: 'Amsterdam',
+          state: 'Noord-Holland',
+          zip: '1017 LR',
+          country: 'Netherlands',
+          phone: '+31 20 555 0123',
+          website: 'https://apiintegration.nl',
+          industry: 'Software Integration',
+          numberofemployees: '8-15',
+          annualrevenue: '1200000',
+          peppol_participant_id: '0088:7318900000011',
+          vat_number: 'NL963852741B01',
+          company_registration_number: '96385274'
+        }
+      },
+      'company_2010': {
+        id: companyId,
+        properties: {
+          name: 'Digital Campaign Agency',
+          domain: 'digitalcampaign.nl',
+          address: 'Utrechtsestraat 40',
+          address2: '',
+          city: 'Amsterdam',
+          state: 'Noord-Holland',
+          zip: '1017 VN',
+          country: 'Netherlands',
+          phone: '+31 20 555 0234',
+          website: 'https://digitalcampaign.nl',
+          industry: 'Digital Advertising',
+          numberofemployees: '12-20',
+          annualrevenue: '1600000',
+          peppol_participant_id: '0088:7318900000012',
+          vat_number: 'NL852741963B01',
+          company_registration_number: '85274196'
+        }
+      },
+      'company_2011': {
+        id: companyId,
+        properties: {
+          name: 'Enterprise Systems B.V.',
+          domain: 'enterprise.nl',
+          address: 'Museumplein 19',
+          address2: '',
+          city: 'Amsterdam',
+          state: 'Noord-Holland',
+          zip: '1071 DJ',
+          country: 'Netherlands',
+          phone: '+31 20 555 0345',
+          website: 'https://enterprise.nl',
+          industry: 'Enterprise Software',
+          numberofemployees: '100-200',
+          annualrevenue: '15000000',
+          peppol_participant_id: '0088:7318900000013',
+          vat_number: 'NL159753468B01',
+          company_registration_number: '15975346'
+        }
+      },
+      'company_2012': {
+        id: companyId,
+        properties: {
+          name: 'DevOps Specialists',
+          domain: 'devops.nl',
+          address: 'Vondelpark 1',
+          address2: '',
+          city: 'Amsterdam',
+          state: 'Noord-Holland',
+          zip: '1071 AA',
+          country: 'Netherlands',
+          phone: '+31 20 555 0456',
+          website: 'https://devops.nl',
+          industry: 'DevOps',
+          numberofemployees: '25-35',
+          annualrevenue: '2800000',
+          peppol_participant_id: '0088:7318900000014',
+          vat_number: 'NL468159753B01',
+          company_registration_number: '46815975'
+        }
+      },
+      'company_2013': {
+        id: companyId,
+        properties: {
+          name: 'UX Design Studio',
+          domain: 'uxdesign.nl',
+          address: 'Concertgebouwplein 10',
+          address2: '',
+          city: 'Amsterdam',
+          state: 'Noord-Holland',
+          zip: '1071 LN',
+          country: 'Netherlands',
+          phone: '+31 20 555 0567',
+          website: 'https://uxdesign.nl',
+          industry: 'Design',
+          numberofemployees: '15-25',
+          annualrevenue: '2000000',
+          peppol_participant_id: '0088:7318900000015',
+          vat_number: 'NL753468159B01',
+          company_registration_number: '75346815'
+        }
+      },
+      'company_2014': {
+        id: companyId,
+        properties: {
+          name: 'Data Analytics Pro',
+          domain: 'dataanalytics.nl',
+          address: 'Leidseplein 29',
+          address2: '',
+          city: 'Amsterdam',
+          state: 'Noord-Holland',
+          zip: '1017 PS',
+          country: 'Netherlands',
+          phone: '+31 20 555 0678',
+          website: 'https://dataanalytics.nl',
+          industry: 'Data Analytics',
+          numberofemployees: '40-60',
+          annualrevenue: '5500000',
+          peppol_participant_id: '0088:7318900000016',
+          vat_number: 'NL357159468B01',
+          company_registration_number: '35715946'
+        }
+      },
+      'company_2015': {
+        id: companyId,
+        properties: {
+          name: 'Backup Solutions',
+          domain: 'backupsolutions.nl',
+          address: 'Rembrandtplein 5',
+          address2: '',
+          city: 'Amsterdam',
+          state: 'Noord-Holland',
+          zip: '1017 CT',
+          country: 'Netherlands',
+          phone: '+31 20 555 0789',
+          website: 'https://backupsolutions.nl',
+          industry: 'Data Backup',
+          numberofemployees: '10-20',
+          annualrevenue: '1400000',
+          peppol_participant_id: '0088:7318900000017',
+          vat_number: 'NL951357468B01',
+          company_registration_number: '95135746'
+        }
+      },
+      'company_2016': {
+        id: companyId,
+        properties: {
+          name: 'E-commerce Integration',
+          domain: 'eintegration.nl',
+          address: 'Nieuwmarkt 22',
+          address2: '',
+          city: 'Amsterdam',
+          state: 'Noord-Holland',
+          zip: '1011 HP',
+          country: 'Netherlands',
+          phone: '+31 20 555 0890',
+          website: 'https://eintegration.nl',
+          industry: 'E-commerce',
+          numberofemployees: '20-30',
+          annualrevenue: '2600000',
+          peppol_participant_id: '0088:7318900000018',
+          vat_number: 'NL468951357B01',
+          company_registration_number: '46895135'
+        }
+      },
+      'company_2017': {
+        id: companyId,
+        properties: {
+          name: 'CRM Solutions Plus',
+          domain: 'crmsolutions.nl',
+          address: 'Waterlooplein 6',
+          address2: '',
+          city: 'Amsterdam',
+          state: 'Noord-Holland',
+          zip: '1011 PG',
+          country: 'Netherlands',
+          phone: '+31 20 555 0901',
+          website: 'https://crmsolutions.nl',
+          industry: 'CRM Software',
+          numberofemployees: '15-25',
+          annualrevenue: '2100000',
+          peppol_participant_id: '0088:7318900000019',
+          vat_number: 'NL357468951B01',
+          company_registration_number: '35746895'
+        }
+      },
+      'company_2018': {
+        id: companyId,
+        properties: {
+          name: 'Performance Optimization',
+          domain: 'performance.nl',
+          address: 'Jodenbreestraat 4',
+          address2: '',
+          city: 'Amsterdam',
+          state: 'Noord-Holland',
+          zip: '1011 NK',
+          country: 'Netherlands',
+          phone: '+31 20 555 0012',
+          website: 'https://performance.nl',
+          industry: 'Performance Optimization',
+          numberofemployees: '12-18',
+          annualrevenue: '1750000',
+          peppol_participant_id: '0088:7318900000020',
+          vat_number: 'NL951468357B01',
+          company_registration_number: '95146835'
+        }
       }
     };
+
+    return companies[companyId] || companies['company_456'];
   }
 
   async getContact(contactId: string): Promise<HubSpotContact | null> {
@@ -157,10 +581,334 @@ export class HubSpotService {
           companies: [{ id: 'company_101' }],
           contacts: [{ id: 'contact_102' }]
         }
+      },
+      {
+        id: 'deal_1001',
+        properties: {
+          dealname: 'Website ontwikkeling',
+          amount: '15000',
+          closedate: '2024-03-01',
+          dealstage: 'closedwon',
+          pipeline: 'default',
+          hubspot_owner_id: '12345',
+          hs_object_id: 'deal_1001',
+          createdate: '2024-02-15T10:00:00Z',
+          hs_lastmodifieddate: '2024-03-01T10:00:00Z'
+        },
+        associations: {
+          companies: [{ id: 'company_2001' }],
+          contacts: [{ id: 'contact_3001' }]
+        }
+      },
+      {
+        id: 'deal_1002',
+        properties: {
+          dealname: 'SEO optimalisatie',
+          amount: '5000',
+          closedate: '2024-03-05',
+          dealstage: 'closedwon',
+          pipeline: 'default',
+          hubspot_owner_id: '12345',
+          hs_object_id: 'deal_1002',
+          createdate: '2024-02-20T10:00:00Z',
+          hs_lastmodifieddate: '2024-03-05T10:00:00Z'
+        },
+        associations: {
+          companies: [{ id: 'company_2002' }],
+          contacts: [{ id: 'contact_3002' }]
+        }
+      },
+      {
+        id: 'deal_1003',
+        properties: {
+          dealname: 'E-commerce platform',
+          amount: '25000',
+          closedate: '2024-03-10',
+          dealstage: 'closedwon',
+          pipeline: 'default',
+          hubspot_owner_id: '12345',
+          hs_object_id: 'deal_1003',
+          createdate: '2024-02-25T10:00:00Z',
+          hs_lastmodifieddate: '2024-03-10T10:00:00Z'
+        },
+        associations: {
+          companies: [{ id: 'company_2003' }],
+          contacts: [{ id: 'contact_3003' }]
+        }
+      },
+      {
+        id: 'deal_1004',
+        properties: {
+          dealname: 'Mobile app ontwikkeling',
+          amount: '30000',
+          closedate: '2024-03-15',
+          dealstage: 'closedwon',
+          pipeline: 'default',
+          hubspot_owner_id: '12345',
+          hs_object_id: 'deal_1004',
+          createdate: '2024-03-01T10:00:00Z',
+          hs_lastmodifieddate: '2024-03-15T10:00:00Z'
+        },
+        associations: {
+          companies: [{ id: 'company_2004' }],
+          contacts: [{ id: 'contact_3004' }]
+        }
+      },
+      {
+        id: 'deal_1005',
+        properties: {
+          dealname: 'Database migratie',
+          amount: '8000',
+          closedate: '2024-03-20',
+          dealstage: 'closedwon',
+          pipeline: 'default',
+          hubspot_owner_id: '12345',
+          hs_object_id: 'deal_1005',
+          createdate: '2024-03-05T10:00:00Z',
+          hs_lastmodifieddate: '2024-03-20T10:00:00Z'
+        },
+        associations: {
+          companies: [{ id: 'company_2005' }],
+          contacts: [{ id: 'contact_3005' }]
+        }
+      },
+      {
+        id: 'deal_1006',
+        properties: {
+          dealname: 'IT consultancy',
+          amount: '12000',
+          closedate: '2024-03-25',
+          dealstage: 'closedwon',
+          pipeline: 'default',
+          hubspot_owner_id: '12345',
+          hs_object_id: 'deal_1006',
+          createdate: '2024-03-10T10:00:00Z',
+          hs_lastmodifieddate: '2024-03-25T10:00:00Z'
+        },
+        associations: {
+          companies: [{ id: 'company_2006' }],
+          contacts: [{ id: 'contact_3006' }]
+        }
+      },
+      {
+        id: 'deal_1007',
+        properties: {
+          dealname: 'Cloud migratie',
+          amount: '18000',
+          closedate: '2024-03-30',
+          dealstage: 'closedwon',
+          pipeline: 'default',
+          hubspot_owner_id: '12345',
+          hs_object_id: 'deal_1007',
+          createdate: '2024-03-15T10:00:00Z',
+          hs_lastmodifieddate: '2024-03-30T10:00:00Z'
+        },
+        associations: {
+          companies: [{ id: 'company_2007' }],
+          contacts: [{ id: 'contact_3007' }]
+        }
+      },
+      {
+        id: 'deal_1008',
+        properties: {
+          dealname: 'Security audit',
+          amount: '7500',
+          closedate: '2024-04-01',
+          dealstage: 'closedwon',
+          pipeline: 'default',
+          hubspot_owner_id: '12345',
+          hs_object_id: 'deal_1008',
+          createdate: '2024-03-20T10:00:00Z',
+          hs_lastmodifieddate: '2024-04-01T10:00:00Z'
+        },
+        associations: {
+          companies: [{ id: 'company_2008' }],
+          contacts: [{ id: 'contact_3008' }]
+        }
+      },
+      {
+        id: 'deal_1009',
+        properties: {
+          dealname: 'API integratie',
+          amount: '9500',
+          closedate: '2024-04-05',
+          dealstage: 'closedwon',
+          pipeline: 'default',
+          hubspot_owner_id: '12345',
+          hs_object_id: 'deal_1009',
+          createdate: '2024-03-25T10:00:00Z',
+          hs_lastmodifieddate: '2024-04-05T10:00:00Z'
+        },
+        associations: {
+          companies: [{ id: 'company_2009' }],
+          contacts: [{ id: 'contact_3009' }]
+        }
+      },
+      {
+        id: 'deal_1010',
+        properties: {
+          dealname: 'Digital marketing campaign',
+          amount: '6000',
+          closedate: '2024-04-10',
+          dealstage: 'closedwon',
+          pipeline: 'default',
+          hubspot_owner_id: '12345',
+          hs_object_id: 'deal_1010',
+          createdate: '2024-03-30T10:00:00Z',
+          hs_lastmodifieddate: '2024-04-10T10:00:00Z'
+        },
+        associations: {
+          companies: [{ id: 'company_2010' }],
+          contacts: [{ id: 'contact_3010' }]
+        }
+      },
+      {
+        id: 'deal_1011',
+        properties: {
+          dealname: 'ERP implementatie',
+          amount: '45000',
+          closedate: '2024-04-15',
+          dealstage: 'closedwon',
+          pipeline: 'default',
+          hubspot_owner_id: '12345',
+          hs_object_id: 'deal_1011',
+          createdate: '2024-04-01T10:00:00Z',
+          hs_lastmodifieddate: '2024-04-15T10:00:00Z'
+        },
+        associations: {
+          companies: [{ id: 'company_2011' }],
+          contacts: [{ id: 'contact_3011' }]
+        }
+      },
+      {
+        id: 'deal_1012',
+        properties: {
+          dealname: 'DevOps setup',
+          amount: '11000',
+          closedate: '2024-04-20',
+          dealstage: 'closedwon',
+          pipeline: 'default',
+          hubspot_owner_id: '12345',
+          hs_object_id: 'deal_1012',
+          createdate: '2024-04-05T10:00:00Z',
+          hs_lastmodifieddate: '2024-04-20T10:00:00Z'
+        },
+        associations: {
+          companies: [{ id: 'company_2012' }],
+          contacts: [{ id: 'contact_3012' }]
+        }
+      },
+      {
+        id: 'deal_1013',
+        properties: {
+          dealname: 'UX/UI redesign',
+          amount: '13500',
+          closedate: '2024-04-25',
+          dealstage: 'closedwon',
+          pipeline: 'default',
+          hubspot_owner_id: '12345',
+          hs_object_id: 'deal_1013',
+          createdate: '2024-04-10T10:00:00Z',
+          hs_lastmodifieddate: '2024-04-25T10:00:00Z'
+        },
+        associations: {
+          companies: [{ id: 'company_2013' }],
+          contacts: [{ id: 'contact_3013' }]
+        }
+      },
+      {
+        id: 'deal_1014',
+        properties: {
+          dealname: 'Data analytics platform',
+          amount: '22000',
+          closedate: '2024-04-30',
+          dealstage: 'closedwon',
+          pipeline: 'default',
+          hubspot_owner_id: '12345',
+          hs_object_id: 'deal_1014',
+          createdate: '2024-04-15T10:00:00Z',
+          hs_lastmodifieddate: '2024-04-30T10:00:00Z'
+        },
+        associations: {
+          companies: [{ id: 'company_2014' }],
+          contacts: [{ id: 'contact_3014' }]
+        }
+      },
+      {
+        id: 'deal_1015',
+        properties: {
+          dealname: 'Backup & recovery solution',
+          amount: '8500',
+          closedate: '2024-05-01',
+          dealstage: 'closedwon',
+          pipeline: 'default',
+          hubspot_owner_id: '12345',
+          hs_object_id: 'deal_1015',
+          createdate: '2024-04-20T10:00:00Z',
+          hs_lastmodifieddate: '2024-05-01T10:00:00Z'
+        },
+        associations: {
+          companies: [{ id: 'company_2015' }],
+          contacts: [{ id: 'contact_3015' }]
+        }
+      },
+      {
+        id: 'deal_1016',
+        properties: {
+          dealname: 'Webshop integratie',
+          amount: '16500',
+          closedate: '2024-05-05',
+          dealstage: 'closedwon',
+          pipeline: 'default',
+          hubspot_owner_id: '12345',
+          hs_object_id: 'deal_1016',
+          createdate: '2024-04-25T10:00:00Z',
+          hs_lastmodifieddate: '2024-05-05T10:00:00Z'
+        },
+        associations: {
+          companies: [{ id: 'company_2016' }],
+          contacts: [{ id: 'contact_3016' }]
+        }
+      },
+      {
+        id: 'deal_1017',
+        properties: {
+          dealname: 'CRM customization',
+          amount: '9200',
+          closedate: '2024-05-10',
+          dealstage: 'closedwon',
+          pipeline: 'default',
+          hubspot_owner_id: '12345',
+          hs_object_id: 'deal_1017',
+          createdate: '2024-04-30T10:00:00Z',
+          hs_lastmodifieddate: '2024-05-10T10:00:00Z'
+        },
+        associations: {
+          companies: [{ id: 'company_2017' }],
+          contacts: [{ id: 'contact_3017' }]
+        }
+      },
+      {
+        id: 'deal_1018',
+        properties: {
+          dealname: 'Performance optimization',
+          amount: '7800',
+          closedate: '2024-05-15',
+          dealstage: 'closedwon',
+          pipeline: 'default',
+          hubspot_owner_id: '12345',
+          hs_object_id: 'deal_1018',
+          createdate: '2024-05-01T10:00:00Z',
+          hs_lastmodifieddate: '2024-05-15T10:00:00Z'
+        },
+        associations: {
+          companies: [{ id: 'company_2018' }],
+          contacts: [{ id: 'contact_3018' }]
+        }
       }
     ];
 
-    return deals;
+    return deals.slice(0, limit);
   }
 
   async updateCompanyPeppolId(companyId: string, peppolId: string): Promise<boolean> {
