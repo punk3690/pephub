@@ -2,25 +2,33 @@ import { useState, useEffect } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { Loader, RefreshCw, ExternalLink, Euro } from 'lucide-react';
+import { Input } from '@/components/ui/input';
+import { Checkbox } from '@/components/ui/checkbox';
+import { Loader, RefreshCw, ExternalLink, Euro, Search, Send } from 'lucide-react';
 import { HubSpotDeal } from '@/types/hubspot';
 import { hubspotService } from '@/services/hubspotService';
 
 interface DealSelectorProps {
   selectedDeal: HubSpotDeal | null;
   onDealSelect: (deal: HubSpotDeal) => void;
+  selectedDeals?: HubSpotDeal[];
+  onBatchSelect?: (deals: HubSpotDeal[]) => void;
+  batchMode?: boolean;
 }
 
-export function DealSelector({ selectedDeal, onDealSelect }: DealSelectorProps) {
+export function DealSelector({ selectedDeal, onDealSelect, selectedDeals = [], onBatchSelect, batchMode = false }: DealSelectorProps) {
   const [deals, setDeals] = useState<HubSpotDeal[]>([]);
+  const [filteredDeals, setFilteredDeals] = useState<HubSpotDeal[]>([]);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
+  const [searchQuery, setSearchQuery] = useState('');
 
   const loadDeals = async () => {
     try {
       setLoading(true);
       const dealsData = await hubspotService.getDealsForPortal();
       setDeals(dealsData);
+      setFilteredDeals(dealsData);
       
       // Auto-select current deal if available
       const context = hubspotService.getContext();
@@ -35,6 +43,30 @@ export function DealSelector({ selectedDeal, onDealSelect }: DealSelectorProps) 
     } finally {
       setLoading(false);
     }
+  };
+
+  // Filter deals based on search query
+  useEffect(() => {
+    if (!searchQuery.trim()) {
+      setFilteredDeals(deals);
+    } else {
+      const filtered = deals.filter(deal => 
+        deal.properties.dealname.toLowerCase().includes(searchQuery.toLowerCase())
+      );
+      setFilteredDeals(filtered);
+    }
+  }, [deals, searchQuery]);
+
+  const handleBatchToggle = (deal: HubSpotDeal, checked: boolean) => {
+    if (!onBatchSelect) return;
+    
+    let newSelection;
+    if (checked) {
+      newSelection = [...selectedDeals, deal];
+    } else {
+      newSelection = selectedDeals.filter(d => d.id !== deal.id);
+    }
+    onBatchSelect(newSelection);
   };
 
   const refreshDeals = async () => {
@@ -90,9 +122,11 @@ export function DealSelector({ selectedDeal, onDealSelect }: DealSelectorProps) 
       <CardHeader>
         <div className="flex items-center justify-between">
           <div>
-            <CardTitle className="text-lg">Selecteer Deal</CardTitle>
+            <CardTitle className="text-lg flex items-center gap-2">
+              Selecteer Deal{batchMode && ` (${selectedDeals.length} geselecteerd)`}
+            </CardTitle>
             <CardDescription>
-              Kies de deal waarvoor je een Peppol-factuur wilt verzenden
+              {batchMode ? 'Selecteer meerdere deals voor batch verzending' : 'Kies de deal waarvoor je een Peppol-factuur wilt verzenden'}
             </CardDescription>
           </div>
           <Button
@@ -106,24 +140,45 @@ export function DealSelector({ selectedDeal, onDealSelect }: DealSelectorProps) 
             Vernieuwen
           </Button>
         </div>
+        
+        {/* Search bar */}
+        <div className="relative">
+          <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+          <Input
+            placeholder="Zoek op dealnaam..."
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
+            className="pl-10"
+          />
+        </div>
       </CardHeader>
       <CardContent className="space-y-3">
-        {deals.length === 0 ? (
+        {filteredDeals.length === 0 ? (
           <div className="text-center py-8 text-muted-foreground">
-            <p>Geen deals gevonden</p>
+            <p>{searchQuery ? 'Geen deals gevonden met deze zoekterm' : 'Geen deals gevonden'}</p>
           </div>
         ) : (
-          deals.map((deal) => (
+          filteredDeals.map((deal) => (
             <div
               key={deal.id}
-              className={`p-4 rounded-lg border-2 transition-all cursor-pointer hover:shadow-md ${
+              className={`p-4 rounded-lg border-2 transition-all ${!batchMode ? 'cursor-pointer' : ''} hover:shadow-md ${
                 selectedDeal?.id === deal.id
                   ? 'border-primary bg-primary/5 shadow-sm'
                   : 'border-muted hover:border-primary/50'
               }`}
-              onClick={() => onDealSelect(deal)}
+              onClick={!batchMode ? () => onDealSelect(deal) : undefined}
             >
               <div className="flex items-start justify-between gap-4">
+                {batchMode && (
+                  <div className="pt-1">
+                    <Checkbox
+                      checked={selectedDeals.some(d => d.id === deal.id)}
+                      onCheckedChange={(checked) => handleBatchToggle(deal, checked as boolean)}
+                      onClick={(e) => e.stopPropagation()}
+                    />
+                  </div>
+                )}
+                
                 <div className="flex-1 min-w-0">
                   <div className="flex items-center gap-2 mb-2">
                     <h3 className="font-medium text-sm truncate">
@@ -146,7 +201,7 @@ export function DealSelector({ selectedDeal, onDealSelect }: DealSelectorProps) 
                 </div>
                 
                 <div className="flex items-center gap-2">
-                  {selectedDeal?.id === deal.id && (
+                  {!batchMode && selectedDeal?.id === deal.id && (
                     <Badge variant="default" className="text-xs">
                       Geselecteerd
                     </Badge>

@@ -3,7 +3,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Separator } from '@/components/ui/separator';
-import { History, RefreshCw, ExternalLink, Calendar, Hash, Building } from 'lucide-react';
+import { History, RefreshCw, ExternalLink, Calendar, Hash, Building, Download, FileDown } from 'lucide-react';
 import { PeppolSendStatus } from '@/types/hubspot';
 import { peppolService } from '@/services/peppolService';
 import { StatusBadge } from './StatusBadge';
@@ -70,6 +70,30 @@ export function InvoiceHistory({ dealId, refreshTrigger }: InvoiceHistoryProps) 
     ? invoices.filter(invoice => invoice.dealId === dealId)
     : invoices;
 
+  const exportToCSV = () => {
+    const headers = ['Factuurnummer', 'Status', 'Verzonden op', 'Afgeleverd op', 'Deal ID', 'Ontvanger ID', 'Peppol Message ID'];
+    const csvData = filteredInvoices.map(invoice => [
+      invoice.invoiceNumber,
+      invoice.status,
+      formatDate(invoice.sentAt),
+      invoice.deliveredAt ? formatDate(invoice.deliveredAt) : '',
+      invoice.dealId,
+      invoice.recipientId || '',
+      invoice.peppolMessageId || ''
+    ]);
+
+    const csvContent = [
+      headers.join(','),
+      ...csvData.map(row => row.map(cell => `"${cell}"`).join(','))
+    ].join('\n');
+
+    const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+    const link = document.createElement('a');
+    link.href = URL.createObjectURL(blob);
+    link.download = `peppol-facturen-${new Date().toISOString().split('T')[0]}.csv`;
+    link.click();
+  };
+
   return (
     <Card>
       <CardHeader>
@@ -86,16 +110,29 @@ export function InvoiceHistory({ dealId, refreshTrigger }: InvoiceHistoryProps) 
               }
             </CardDescription>
           </div>
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={refreshInvoices}
-            disabled={refreshing}
-            className="gap-2"
-          >
-            <RefreshCw className={`h-4 w-4 ${refreshing ? 'animate-spin' : ''}`} />
-            Vernieuwen
-          </Button>
+          <div className="flex items-center gap-2">
+            {filteredInvoices.length > 0 && (
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={exportToCSV}
+                className="gap-2"
+              >
+                <Download className="h-4 w-4" />
+                Export CSV
+              </Button>
+            )}
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={refreshInvoices}
+              disabled={refreshing}
+              className="gap-2"
+            >
+              <RefreshCw className={`h-4 w-4 ${refreshing ? 'animate-spin' : ''}`} />
+              Vernieuwen
+            </Button>
+          </div>
         </div>
       </CardHeader>
       <CardContent>
@@ -178,16 +215,40 @@ export function InvoiceHistory({ dealId, refreshTrigger }: InvoiceHistoryProps) 
                       {getTimeSince(invoice.sentAt)}
                     </div>
                     
-                    <Button
-                      variant="ghost"
-                      size="sm"
-                      className="h-6 w-6 p-0"
-                      onClick={() => {
-                        console.log('Open deal in HubSpot:', invoice.dealId);
-                      }}
-                    >
-                      <ExternalLink className="h-3 w-3" />
-                    </Button>
+                    <div className="flex items-center gap-1">
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        className="h-6 w-6 p-0"
+                        onClick={() => {
+                          // Download individual invoice as CSV
+                          const csvContent = [
+                            'Factuurnummer,Status,Verzonden op,Afgeleverd op,Deal ID,Ontvanger ID,Peppol Message ID',
+                            `"${invoice.invoiceNumber}","${invoice.status}","${formatDate(invoice.sentAt)}","${invoice.deliveredAt ? formatDate(invoice.deliveredAt) : ''}","${invoice.dealId}","${invoice.recipientId || ''}","${invoice.peppolMessageId || ''}"`
+                          ].join('\n');
+                          
+                          const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+                          const link = document.createElement('a');
+                          link.href = URL.createObjectURL(blob);
+                          link.download = `peppol-factuur-${invoice.invoiceNumber}.csv`;
+                          link.click();
+                        }}
+                        title="Download factuur"
+                      >
+                        <FileDown className="h-3 w-3" />
+                      </Button>
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        className="h-6 w-6 p-0"
+                        onClick={() => {
+                          console.log('Open deal in HubSpot:', invoice.dealId);
+                        }}
+                        title="Open deal in HubSpot"
+                      >
+                        <ExternalLink className="h-3 w-3" />
+                      </Button>
+                    </div>
                   </div>
                 </div>
                 

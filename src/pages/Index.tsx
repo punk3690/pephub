@@ -9,6 +9,7 @@ import { AuthSetup } from '@/components/AuthSetup';
 import { DealSelector } from '@/components/DealSelector';
 import { InvoiceGenerator } from '@/components/InvoiceGenerator';
 import { InvoiceHistory } from '@/components/InvoiceHistory';
+import { MonthlyStats } from '@/components/MonthlyStats';
 import { toast } from 'sonner';
 
 const Index = () => {
@@ -87,6 +88,7 @@ const Index = () => {
 
       {/* Main content */}
       <main className="max-w-6xl mx-auto px-4 py-6">
+        <MonthlyStats />
         <div className="grid grid-cols-1 xl:grid-cols-3 gap-6">
           {/* Deal selector - Always visible */}
           <div className="xl:col-span-1">
@@ -151,8 +153,9 @@ const Index = () => {
       <footer className="border-t bg-card/30 mt-12">
         <div className="max-w-6xl mx-auto px-4 py-6">
           <div className="flex items-center justify-between text-sm text-muted-foreground">
-            <div>
+            <div className="space-y-1">
               <p>Facturen worden verzonden namens <strong>PepHub BV</strong> via het Peppol-netwerk</p>
+              <p className="text-xs">Verwerking van gegevens volgens AVG/GDPR. Alle verzendingen worden beveiligd verwerkt.</p>
             </div>
             <div className="flex items-center gap-4">
               <Badge variant="outline" className="gap-1">

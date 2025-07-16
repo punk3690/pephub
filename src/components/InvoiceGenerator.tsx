@@ -6,10 +6,12 @@ import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { Badge } from '@/components/ui/badge';
 import { Separator } from '@/components/ui/separator';
-import { Send, Loader, FileText, CheckCircle, AlertTriangle } from 'lucide-react';
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from '@/components/ui/alert-dialog';
+import { Send, Loader, FileText, CheckCircle, AlertTriangle, Shield } from 'lucide-react';
 import { HubSpotDeal, PeppolInvoiceData } from '@/types/hubspot';
 import { peppolService } from '@/services/peppolService';
 import { hubspotService } from '@/services/hubspotService';
+import { validatePeppolId, validateVatNumber } from '@/utils/validation';
 import { toast } from 'sonner';
 
 interface InvoiceGeneratorProps {
@@ -40,6 +42,13 @@ export function InvoiceGenerator({ deal, onInvoiceSent }: InvoiceGeneratorProps)
     validated: false
   });
 
+  const [validationStatus, setValidationStatus] = useState({
+    peppolId: false,
+    vatNumber: false
+  });
+
+  const [showConfirmDialog, setShowConfirmDialog] = useState(false);
+
   const calculateTax = () => {
     const amount = parseFloat(invoiceData.amount) || 0;
     return (amount * invoiceData.taxRate) / 100;
@@ -51,9 +60,6 @@ export function InvoiceGenerator({ deal, onInvoiceSent }: InvoiceGeneratorProps)
     return amount + tax;
   };
 
-  const validatePeppolId = (peppolId: string) => {
-    return peppolService.validatePeppolId(peppolId);
-  };
 
   const loadCustomerInfo = async () => {
     try {
@@ -84,6 +90,14 @@ export function InvoiceGenerator({ deal, onInvoiceSent }: InvoiceGeneratorProps)
   useEffect(() => {
     loadCustomerInfo();
   }, [deal]);
+
+  // Real-time validation
+  useEffect(() => {
+    setValidationStatus({
+      peppolId: validatePeppolId(invoiceData.customerPeppolId),
+      vatNumber: validateVatNumber(invoiceData.customerVatNumber)
+    });
+  }, [invoiceData.customerPeppolId, invoiceData.customerVatNumber]);
 
   const handleSendInvoice = async () => {
     if (!validatePeppolId(invoiceData.customerPeppolId)) {
@@ -247,28 +261,69 @@ export function InvoiceGenerator({ deal, onInvoiceSent }: InvoiceGeneratorProps)
             <div className="grid grid-cols-2 gap-4">
               <div className="space-y-2">
                 <Label htmlFor="customerPeppolId">Peppol ID *</Label>
-                <Input
-                  id="customerPeppolId"
-                  value={invoiceData.customerPeppolId}
-                  onChange={(e) => setInvoiceData(prev => ({ ...prev, customerPeppolId: e.target.value }))}
-                  placeholder="0088:1234567890123"
-                  className={!validatePeppolId(invoiceData.customerPeppolId) && invoiceData.customerPeppolId ? 'border-destructive' : ''}
-                />
-                {!validatePeppolId(invoiceData.customerPeppolId) && invoiceData.customerPeppolId && (
+                <div className="relative">
+                  <Input
+                    id="customerPeppolId"
+                    value={invoiceData.customerPeppolId}
+                    onChange={(e) => setInvoiceData(prev => ({ ...prev, customerPeppolId: e.target.value }))}
+                    placeholder="iso6523-actorid-upis::0088::1234567890123"
+                    className={`pr-8 ${
+                      invoiceData.customerPeppolId
+                        ? validationStatus.peppolId
+                          ? 'border-success'
+                          : 'border-destructive'
+                        : ''
+                    }`}
+                  />
+                  {invoiceData.customerPeppolId && (
+                    <div className="absolute right-2 top-1/2 transform -translate-y-1/2">
+                      {validationStatus.peppolId ? (
+                        <CheckCircle className="h-4 w-4 text-success" />
+                      ) : (
+                        <AlertTriangle className="h-4 w-4 text-destructive" />
+                      )}
+                    </div>
+                  )}
+                </div>
+                {invoiceData.customerPeppolId && !validationStatus.peppolId && (
                   <p className="text-xs text-destructive flex items-center gap-1">
                     <AlertTriangle className="h-3 w-3" />
-                    Ongeldig Peppol ID formaat
+                    Formaat: iso6523-actorid-upis::scheme::value
                   </p>
                 )}
               </div>
               <div className="space-y-2">
                 <Label htmlFor="customerVatNumber">BTW-nummer</Label>
-                <Input
-                  id="customerVatNumber"
-                  value={invoiceData.customerVatNumber}
-                  onChange={(e) => setInvoiceData(prev => ({ ...prev, customerVatNumber: e.target.value }))}
-                  placeholder="NL123456789B01"
-                />
+                <div className="relative">
+                  <Input
+                    id="customerVatNumber"
+                    value={invoiceData.customerVatNumber}
+                    onChange={(e) => setInvoiceData(prev => ({ ...prev, customerVatNumber: e.target.value }))}
+                    placeholder="NL123456789B01"
+                    className={`pr-8 ${
+                      invoiceData.customerVatNumber
+                        ? validationStatus.vatNumber
+                          ? 'border-success'
+                          : 'border-destructive'
+                        : ''
+                    }`}
+                  />
+                  {invoiceData.customerVatNumber && (
+                    <div className="absolute right-2 top-1/2 transform -translate-y-1/2">
+                      {validationStatus.vatNumber ? (
+                        <CheckCircle className="h-4 w-4 text-success" />
+                      ) : (
+                        <AlertTriangle className="h-4 w-4 text-destructive" />
+                      )}
+                    </div>
+                  )}
+                </div>
+                {invoiceData.customerVatNumber && !validationStatus.vatNumber && (
+                  <p className="text-xs text-destructive flex items-center gap-1">
+                    <AlertTriangle className="h-3 w-3" />
+                    Ongeldig BTW-nummer formaat
+                  </p>
+                )}
               </div>
             </div>
           </div>
@@ -329,24 +384,72 @@ export function InvoiceGenerator({ deal, onInvoiceSent }: InvoiceGeneratorProps)
             <p>Facturen worden namens Uw Bedrijf BV via het Peppol-netwerk verzonden.</p>
           </div>
           
-          <Button
-            onClick={handleSendInvoice}
-            disabled={loading || !validatePeppolId(invoiceData.customerPeppolId)}
-            size="lg"
-            className="gap-2"
-          >
-            {loading ? (
-              <>
-                <Loader className="h-4 w-4 animate-spin" />
-                Verzenden...
-              </>
-            ) : (
-              <>
+          <AlertDialog>
+            <AlertDialogTrigger asChild>
+              <Button
+                disabled={loading || !validationStatus.peppolId || !customerInfo.name}
+                size="lg"
+                className="gap-2"
+              >
                 <Send className="h-4 w-4" />
                 Verzend als Peppol-factuur
-              </>
-            )}
-          </Button>
+              </Button>
+            </AlertDialogTrigger>
+            <AlertDialogContent>
+              <AlertDialogHeader>
+                <AlertDialogTitle className="flex items-center gap-2">
+                  <Shield className="h-5 w-5 text-primary" />
+                  Factuur verzenden bevestigen
+                </AlertDialogTitle>
+                <AlertDialogDescription asChild>
+                  <div className="space-y-3">
+                    <p>Weet je zeker dat je deze factuur wilt verzenden?</p>
+                    <div className="p-3 bg-muted rounded-lg text-sm space-y-2">
+                      <div className="flex justify-between">
+                        <span>Factuurnummer:</span>
+                        <span className="font-medium">{invoiceData.invoiceNumber}</span>
+                      </div>
+                      <div className="flex justify-between">
+                        <span>Klant:</span>
+                        <span className="font-medium">{customerInfo.name}</span>
+                      </div>
+                      <div className="flex justify-between">
+                        <span>Bedrag:</span>
+                        <span className="font-medium">€{new Intl.NumberFormat('nl-NL', { minimumFractionDigits: 2 }).format(calculateTotal())}</span>
+                      </div>
+                      <div className="flex justify-between">
+                        <span>Peppol ID:</span>
+                        <span className="font-medium text-xs">{invoiceData.customerPeppolId}</span>
+                      </div>
+                    </div>
+                    <p className="text-xs text-muted-foreground">
+                      Deze factuur wordt verzonden namens PepHub BV via het beveiligde Peppol-netwerk.
+                    </p>
+                  </div>
+                </AlertDialogDescription>
+              </AlertDialogHeader>
+              <AlertDialogFooter>
+                <AlertDialogCancel>Annuleren</AlertDialogCancel>
+                <AlertDialogAction
+                  onClick={handleSendInvoice}
+                  disabled={loading}
+                  className="gap-2"
+                >
+                  {loading ? (
+                    <>
+                      <Loader className="h-4 w-4 animate-spin" />
+                      Verzenden...
+                    </>
+                  ) : (
+                    <>
+                      <Send className="h-4 w-4" />
+                      Ja, verzenden
+                    </>
+                  )}
+                </AlertDialogAction>
+              </AlertDialogFooter>
+            </AlertDialogContent>
+          </AlertDialog>
         </div>
       </CardContent>
     </Card>
