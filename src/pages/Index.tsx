@@ -2,7 +2,8 @@ import { useState, useEffect } from 'react';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { RefreshCw, Zap, FileText, History, Settings } from 'lucide-react';
+import { RefreshCw, Zap, FileText, History, Settings, CreditCard } from 'lucide-react';
+import { useNavigate } from 'react-router-dom';
 import { HubSpotDeal, PeppolSendStatus } from '@/types/hubspot';
 import { hubspotService } from '@/services/hubspotService';
 import { AuthSetup } from '@/components/AuthSetup';
@@ -13,6 +14,7 @@ import { MonthlyStats } from '@/components/MonthlyStats';
 import { toast } from 'sonner';
 
 const Index = () => {
+  const navigate = useNavigate();
   const [authenticated, setAuthenticated] = useState(false);
   const [selectedDeal, setSelectedDeal] = useState<HubSpotDeal | null>(null);
   const [refreshTrigger, setRefreshTrigger] = useState(0);
@@ -67,6 +69,14 @@ const Index = () => {
             </div>
             
             <div className="flex items-center gap-2">
+              <Button
+                onClick={() => navigate('/credits')}
+                className="gap-2 bg-gradient-to-r from-primary to-primary-glow hover:from-primary/90 hover:to-primary-glow/90 text-primary-foreground shadow-lg"
+              >
+                <CreditCard className="h-4 w-4" />
+                Koop credits voor volumekorting
+              </Button>
+              
               <Badge variant="outline" className="gap-1">
                 <div className="w-2 h-2 bg-success rounded-full"></div>
                 Verbonden
