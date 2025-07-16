@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { RefreshCw, Zap, FileText, History, Settings, CreditCard } from 'lucide-react';
+import { RefreshCw, Zap, FileText, History, Settings, CreditCard, LogOut } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { HubSpotDeal, PeppolSendStatus } from '@/types/hubspot';
 import { hubspotService } from '@/services/hubspotService';
@@ -93,6 +93,20 @@ const Index = () => {
               >
                 <RefreshCw className="h-4 w-4" />
                 Vernieuwen
+              </Button>
+              
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={() => {
+                  hubspotService.logout();
+                  setAuthenticated(false);
+                  toast.success('Succesvol uitgelogd');
+                }}
+                className="gap-2"
+              >
+                <LogOut className="h-4 w-4" />
+                Uitloggen
               </Button>
             </div>
           </div>

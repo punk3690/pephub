@@ -3,11 +3,35 @@ import { HubSpotDeal, HubSpotCompany, HubSpotContact, HubSpotAppContext } from '
 // Mock HubSpot service for development - replace with actual HubSpot API calls
 export class HubSpotService {
   private accessToken: string | null = null;
+  private refreshToken: string | null = null;
   private context: HubSpotAppContext | null = null;
+  private readonly clientId = 'YOUR_HUBSPOT_CLIENT_ID'; // Replace with actual Client ID
+  private readonly clientSecret = 'YOUR_HUBSPOT_CLIENT_SECRET'; // Replace with actual Client Secret  
+  private readonly redirectUri = window.location.origin + '/oauth/callback';
+  private readonly scope = 'crm.objects.companies.read crm.objects.deals.read crm.objects.contacts.read timeline';
 
   constructor() {
-    // In production, this would get the access token from HubSpot's OAuth flow
+    this.loadStoredTokens();
     this.initializeContext();
+  }
+
+  private loadStoredTokens() {
+    this.accessToken = localStorage.getItem('hubspot_access_token');
+    this.refreshToken = localStorage.getItem('hubspot_refresh_token');
+  }
+
+  private storeTokens(accessToken: string, refreshToken: string) {
+    this.accessToken = accessToken;
+    this.refreshToken = refreshToken;
+    localStorage.setItem('hubspot_access_token', accessToken);
+    localStorage.setItem('hubspot_refresh_token', refreshToken);
+  }
+
+  private clearTokens() {
+    this.accessToken = null;
+    this.refreshToken = null;
+    localStorage.removeItem('hubspot_access_token');
+    localStorage.removeItem('hubspot_refresh_token');
   }
 
   private initializeContext() {
@@ -21,11 +45,137 @@ export class HubSpotService {
     };
   }
 
+  getAuthUrl(): string {
+    const params = new URLSearchParams({
+      client_id: this.clientId,
+      redirect_uri: this.redirectUri,
+      scope: this.scope,
+      response_type: 'code',
+      state: 'pephub_oauth_state_' + Date.now()
+    });
+    
+    return `https://app.hubspot.com/oauth/authorize?${params.toString()}`;
+  }
+
   async authenticate(authCode?: string): Promise<boolean> {
-    // Mock authentication - in production this would exchange auth code for access token
-    await new Promise(resolve => setTimeout(resolve, 1000));
-    this.accessToken = 'mock_access_token_' + Date.now();
-    return true;
+    if (!authCode) {
+      // Redirect to OAuth authorization
+      window.location.href = this.getAuthUrl();
+      return false;
+    }
+
+    try {
+      // Exchange authorization code for access token
+      const response = await fetch('https://api.hubapi.com/oauth/v1/token', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/x-www-form-urlencoded',
+        },
+        body: new URLSearchParams({
+          grant_type: 'authorization_code',
+          client_id: this.clientId,
+          client_secret: this.clientSecret,
+          redirect_uri: this.redirectUri,
+          code: authCode,
+        }),
+      });
+
+      if (!response.ok) {
+        throw new Error('OAuth token exchange failed');
+      }
+
+      const data = await response.json();
+      this.storeTokens(data.access_token, data.refresh_token);
+      
+      // Fetch user context after successful authentication
+      await this.fetchUserContext();
+      
+      return true;
+    } catch (error) {
+      console.error('OAuth authentication failed:', error);
+      return false;
+    }
+  }
+
+  async refreshAccessToken(): Promise<boolean> {
+    if (!this.refreshToken) {
+      return false;
+    }
+
+    try {
+      const response = await fetch('https://api.hubapi.com/oauth/v1/token', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/x-www-form-urlencoded',
+        },
+        body: new URLSearchParams({
+          grant_type: 'refresh_token',
+          client_id: this.clientId,
+          client_secret: this.clientSecret,
+          refresh_token: this.refreshToken,
+        }),
+      });
+
+      if (!response.ok) {
+        this.clearTokens();
+        return false;
+      }
+
+      const data = await response.json();
+      this.storeTokens(data.access_token, data.refresh_token);
+      
+      return true;
+    } catch (error) {
+      console.error('Token refresh failed:', error);
+      this.clearTokens();
+      return false;
+    }
+  }
+
+  private async fetchUserContext(): Promise<void> {
+    try {
+      const response = await this.apiCall('/account-info/v3/api-usage/daily/');
+      // This would fetch actual user context from HubSpot
+      // For now, keep the mock context
+    } catch (error) {
+      console.error('Failed to fetch user context:', error);
+    }
+  }
+
+  private async apiCall(endpoint: string, options: RequestInit = {}): Promise<any> {
+    const url = `https://api.hubapi.com${endpoint}`;
+    const headers = {
+      'Authorization': `Bearer ${this.accessToken}`,
+      'Content-Type': 'application/json',
+      ...options.headers,
+    };
+
+    const response = await fetch(url, {
+      ...options,
+      headers,
+    });
+
+    if (response.status === 401) {
+      // Try to refresh token
+      const refreshed = await this.refreshAccessToken();
+      if (refreshed) {
+        // Retry the original request
+        return this.apiCall(endpoint, options);
+      } else {
+        throw new Error('Authentication failed');
+      }
+    }
+
+    if (!response.ok) {
+      throw new Error(`API call failed: ${response.status}`);
+    }
+
+    return response.json();
+  }
+
+  logout(): void {
+    this.clearTokens();
+    this.context = null;
   }
 
   async getCurrentDeal(): Promise<HubSpotDeal | null> {

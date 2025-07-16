@@ -1,73 +1,123 @@
-# Welcome to your Lovable project
+# PepHub - HubSpot Peppol Integration
 
-## Project info
+A React application that integrates with HubSpot to send invoices via the Peppol network using the Recommand API.
 
-**URL**: https://lovable.dev/projects/23dbfeaa-0970-4d1d-a488-607bc5a88fba
+## Features
 
-## How can I edit this code?
+- **HubSpot OAuth Integration**: Secure authentication with HubSpot using OAuth 2.0
+- **Dual Mode Operation**: 
+  - Standard mode for individual invoice sending
+  - Bulk mode for processing multiple invoices at once
+- **Peppol Network Integration**: Send invoices electronically via the Peppol network
+- **Automatic Peppol ID Lookup**: Uses Recommand API to find Peppol participant IDs
+- **Real-time Status Tracking**: Track invoice delivery status in real-time
+- **HubSpot Timeline Integration**: Automatic timeline events for sent invoices
+- **Custom Properties**: Automatically updates deal properties with Peppol status
+- **Audit Trail**: Complete audit logging for compliance
+- **Retry Functionality**: Retry failed invoice deliveries
 
-There are several ways of editing your application.
+## Setup
 
-**Use Lovable**
+### Prerequisites
 
-Simply visit the [Lovable Project](https://lovable.dev/projects/23dbfeaa-0970-4d1d-a488-607bc5a88fba) and start prompting.
+1. HubSpot Developer Account
+2. Recommand API Access
+3. Node.js and npm/yarn
 
-Changes made via Lovable will be committed automatically to this repo.
+### HubSpot OAuth Configuration
 
-**Use your preferred IDE**
+1. Create a HubSpot app in your HubSpot Developer Portal
+2. Configure OAuth settings:
+   - **Redirect URI**: `https://yourdomain.com/oauth/callback`
+   - **Scopes**: 
+     - `crm.objects.companies.read`
+     - `crm.objects.deals.read`
+     - `crm.objects.contacts.read`
+     - `timeline`
 
-If you want to work locally using your own IDE, you can clone this repo and push changes. Pushed changes will also be reflected in Lovable.
+3. Update the OAuth credentials in `src/services/hubspotService.ts`:
+   ```typescript
+   private readonly clientId = 'YOUR_HUBSPOT_CLIENT_ID';
+   private readonly clientSecret = 'YOUR_HUBSPOT_CLIENT_SECRET';
+   ```
 
-The only requirement is having Node.js & npm installed - [install with nvm](https://github.com/nvm-sh/nvm#installing-and-updating)
+   **Security Note**: In production, the client secret should be handled server-side. For frontend-only implementations, consider using HubSpot's Client Credentials flow or implement a backend proxy.
 
-Follow these steps:
+### Installation
 
-```sh
-# Step 1: Clone the repository using the project's Git URL.
-git clone <YOUR_GIT_URL>
+1. Clone the repository
+2. Install dependencies:
+   ```bash
+   npm install
+   ```
+3. Start the development server:
+   ```bash
+   npm run dev
+   ```
 
-# Step 2: Navigate to the project directory.
-cd <YOUR_PROJECT_NAME>
+## Usage
 
-# Step 3: Install the necessary dependencies.
-npm i
+### Standard Mode
+1. Authenticate with HubSpot using OAuth
+2. Select a deal from the deal selector
+3. Review invoice details and Peppol ID
+4. Send invoice via Peppol network
 
-# Step 4: Start the development server with auto-reloading and an instant preview.
-npm run dev
-```
+### Bulk Mode
+1. Switch to bulk mode using the toggle
+2. Select multiple deals using checkboxes
+3. Review the bulk sending summary
+4. Process all selected invoices in batch
 
-**Edit a file directly in GitHub**
+## OAuth Flow
 
-- Navigate to the desired file(s).
-- Click the "Edit" button (pencil icon) at the top right of the file view.
-- Make your changes and commit the changes.
+1. User clicks "Autoriseer met HubSpot"
+2. User is redirected to HubSpot's OAuth authorization page
+3. After approval, HubSpot redirects back to `/oauth/callback`
+4. The app exchanges the authorization code for access tokens
+5. Tokens are stored securely in localStorage
+6. User gains access to the application
 
-**Use GitHub Codespaces**
+## API Integration
 
-- Navigate to the main page of your repository.
-- Click on the "Code" button (green button) near the top right.
-- Select the "Codespaces" tab.
-- Click on "New codespace" to launch a new Codespace environment.
-- Edit files directly within the Codespace and commit and push your changes once you're done.
+### HubSpot API
+- Fetches deals, companies, and contacts
+- Creates timeline events
+- Updates custom properties
+- Maintains audit trail
 
-## What technologies are used for this project?
+### Recommand API (Peppol)
+- Validates Peppol participant IDs
+- Sends invoices via Peppol network
+- Provides delivery status updates
 
-This project is built with:
+## Security Considerations
 
-- Vite
+- OAuth tokens are stored in localStorage (consider more secure storage for production)
+- Client secret exposure (implement backend proxy for production)
+- HTTPS required for OAuth callbacks
+- Input validation for all user data
+
+## Development
+
+The application is built with:
+- React 18
 - TypeScript
-- React
-- shadcn-ui
 - Tailwind CSS
+- Vite
+- React Router
+- Radix UI components
 
-## How can I deploy this project?
+## Deployment
 
-Simply open [Lovable](https://lovable.dev/projects/23dbfeaa-0970-4d1d-a488-607bc5a88fba) and click on Share -> Publish.
+1. Build the application:
+   ```bash
+   npm run build
+   ```
+2. Deploy to your hosting provider
+3. Ensure the OAuth redirect URI matches your deployed domain
+4. Configure environment variables if using server-side components
 
-## Can I connect a custom domain to my Lovable project?
+## License
 
-Yes, you can!
-
-To connect a domain, navigate to Project > Settings > Domains and click Connect Domain.
-
-Read more here: [Setting up a custom domain](https://docs.lovable.dev/tips-tricks/custom-domain#step-by-step-guide)
+This project is licensed under the MIT License.

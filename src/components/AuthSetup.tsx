@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -14,23 +14,51 @@ export function AuthSetup({ onAuthComplete }: AuthSetupProps) {
   const [authenticating, setAuthenticating] = useState(false);
   const [authStep, setAuthStep] = useState<'initial' | 'authorizing' | 'complete'>('initial');
 
+  // Check for OAuth callback on component mount
+  useEffect(() => {
+    const urlParams = new URLSearchParams(window.location.search);
+    const authCode = urlParams.get('code');
+    const error = urlParams.get('error');
+    
+    if (error) {
+      toast.error('Autorisatie geannuleerd of mislukt');
+      return;
+    }
+    
+    if (authCode) {
+      setAuthStep('authorizing');
+      handleAuthenticate();
+    }
+  }, []);
+
   const handleAuthenticate = async () => {
     setAuthenticating(true);
     setAuthStep('authorizing');
     
     try {
-      // Mock OAuth flow - in production this would redirect to HubSpot OAuth
-      await new Promise(resolve => setTimeout(resolve, 2000));
+      // Check if we have an authorization code from OAuth callback
+      const urlParams = new URLSearchParams(window.location.search);
+      const authCode = urlParams.get('code');
       
-      const success = await hubspotService.authenticate();
-      if (success) {
-        setAuthStep('complete');
-        toast.success('Succesvol geautoriseerd met HubSpot!');
-        setTimeout(() => {
-          onAuthComplete();
-        }, 1500);
+      if (authCode) {
+        // We have an auth code, exchange it for access token
+        const success = await hubspotService.authenticate(authCode);
+        if (success) {
+          setAuthStep('complete');
+          toast.success('Succesvol geautoriseerd met HubSpot!');
+          // Clear the URL parameters
+          window.history.replaceState({}, document.title, window.location.pathname);
+          setTimeout(() => {
+            onAuthComplete();
+          }, 1500);
+        } else {
+          throw new Error('Autorisatie mislukt');
+        }
       } else {
-        throw new Error('Autorisatie mislukt');
+        // No auth code, redirect to HubSpot OAuth
+        toast.info('Je wordt doorgestuurd naar HubSpot voor autorisatie...');
+        // This will redirect to HubSpot OAuth
+        await hubspotService.authenticate();
       }
     } catch (error) {
       console.error('Autorisatie fout:', error);
