@@ -112,6 +112,10 @@ export class HubSpotService {
           hs_object_id: 'deal_123',
           createdate: '2024-01-01T10:00:00Z',
           hs_lastmodifieddate: '2024-01-31T15:30:00Z'
+        },
+        associations: {
+          companies: [{ id: 'company_456' }],
+          contacts: [{ id: 'contact_789' }]
         }
       },
       {
@@ -126,11 +130,76 @@ export class HubSpotService {
           hs_object_id: 'deal_456',
           createdate: '2024-01-15T09:00:00Z',
           hs_lastmodifieddate: '2024-02-15T16:45:00Z'
+        },
+        associations: {
+          companies: [{ id: 'company_789' }],
+          contacts: [{ id: 'contact_890' }]
+        }
+      },
+      {
+        id: 'deal_789',
+        properties: {
+          dealname: 'Marketing Automation Setup',
+          amount: '8500',
+          closedate: '2024-02-28',
+          dealstage: 'closedwon',
+          pipeline: 'default',
+          hubspot_owner_id: '12345',
+          hs_object_id: 'deal_789',
+          createdate: '2024-02-01T11:00:00Z',
+          hs_lastmodifieddate: '2024-02-28T14:20:00Z'
+        },
+        associations: {
+          companies: [{ id: 'company_101' }],
+          contacts: [{ id: 'contact_102' }]
         }
       }
     ];
 
     return deals;
+  }
+
+  async updateCompanyPeppolId(companyId: string, peppolId: string): Promise<boolean> {
+    try {
+      // Mock updating HubSpot company property
+      await new Promise(resolve => setTimeout(resolve, 500));
+      
+      console.log(`Updating company ${companyId} with Peppol ID: ${peppolId}`);
+      
+      // In production, this would call HubSpot API to update the company property
+      // await this.apiCall(`/companies/${companyId}`, {
+      //   properties: {
+      //     peppol_participant_id: peppolId
+      //   }
+      // });
+      
+      return true;
+    } catch (error) {
+      console.error('Fout bij opslaan Peppol ID in HubSpot:', error);
+      return false;
+    }
+  }
+
+  async createTimelineEvent(dealId: string, eventData: any): Promise<boolean> {
+    try {
+      // Mock creating timeline event in HubSpot
+      await new Promise(resolve => setTimeout(resolve, 300));
+      
+      console.log(`Creating timeline event for deal ${dealId}:`, eventData);
+      
+      // In production, this would call HubSpot Timeline API
+      // await this.apiCall('/timeline/events', {
+      //   objectId: dealId,
+      //   objectType: 'deal',
+      //   eventType: 'peppol_invoice_sent',
+      //   ...eventData
+      // });
+      
+      return true;
+    } catch (error) {
+      console.error('Fout bij aanmaken timeline event:', error);
+      return false;
+    }
   }
 
   getContext(): HubSpotAppContext | null {

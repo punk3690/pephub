@@ -7,10 +7,11 @@ import { Textarea } from '@/components/ui/textarea';
 import { Badge } from '@/components/ui/badge';
 import { Separator } from '@/components/ui/separator';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from '@/components/ui/alert-dialog';
-import { Send, Loader, FileText, CheckCircle, AlertTriangle, Shield } from 'lucide-react';
+import { Send, Loader, FileText, CheckCircle, AlertTriangle, Shield, Search, Info, ExternalLink } from 'lucide-react';
 import { HubSpotDeal, PeppolInvoiceData } from '@/types/hubspot';
 import { peppolService } from '@/services/peppolService';
 import { hubspotService } from '@/services/hubspotService';
+import { peppolLookupService, PeppolLookupResult } from '@/services/peppolLookupService';
 import { validatePeppolId, validateVatNumber } from '@/utils/validation';
 import { toast } from 'sonner';
 
@@ -48,6 +49,17 @@ export function InvoiceGenerator({ deal, onInvoiceSent }: InvoiceGeneratorProps)
   });
 
   const [showConfirmDialog, setShowConfirmDialog] = useState(false);
+  const [peppolLookupStatus, setPeppolLookupStatus] = useState<{
+    loading: boolean;
+    result: PeppolLookupResult | null;
+    error: string | null;
+  }>({
+    loading: false,
+    result: null,
+    error: null
+  });
+
+  const [showPeppolField, setShowPeppolField] = useState(false);
 
   const calculateTax = () => {
     const amount = parseFloat(invoiceData.amount) || 0;
@@ -75,15 +87,84 @@ export function InvoiceGenerator({ deal, onInvoiceSent }: InvoiceGeneratorProps)
             validated: true
           });
           
+          const hasExistingPeppolId = company.properties.peppol_participant_id;
+          
           setInvoiceData(prev => ({
             ...prev,
-            customerPeppolId: company.properties.peppol_participant_id || '',
+            customerPeppolId: hasExistingPeppolId || '',
             customerVatNumber: company.properties.vat_number || ''
           }));
+
+          // Auto-lookup Peppol ID if not already available
+          if (!hasExistingPeppolId) {
+            await performPeppolLookup(company);
+          } else {
+            setShowPeppolField(true);
+          }
         }
       }
     } catch (error) {
       console.error('Fout bij laden klantgegevens:', error);
+    }
+  };
+
+  const performPeppolLookup = async (company: any) => {
+    setPeppolLookupStatus({ loading: true, result: null, error: null });
+
+    try {
+      const searchParams = {
+        companyName: company.properties.name,
+        vatNumber: company.properties.vat_number,
+        registrationNumber: company.properties.company_registration_number,
+        country: company.properties.country || 'Netherlands',
+        address: company.properties.address,
+        city: company.properties.city
+      };
+
+      const result = await peppolLookupService.lookupPeppolId(searchParams);
+      
+      setPeppolLookupStatus({ loading: false, result, error: null });
+
+      if (result.found && result.peppolId) {
+        setInvoiceData(prev => ({
+          ...prev,
+          customerPeppolId: result.peppolId!
+        }));
+
+        // Save back to HubSpot for future use
+        if (deal.associations?.companies?.[0]) {
+          await hubspotService.updateCompanyPeppolId(
+            deal.associations.companies[0].id,
+            result.peppolId
+          );
+        }
+
+        toast.success(
+          `Peppol ID automatisch gevonden via ${result.source === 'peppol_directory' ? 'Peppol directory' : 
+            result.source === 'recommand_api' ? 'Recommand API' : 'HubSpot cache'}`
+        );
+      } else {
+        setPeppolLookupStatus({
+          loading: false,
+          result,
+          error: 'Geen Peppol ID gevonden. Voer handmatig in of contacteer de klant.'
+        });
+        setShowPeppolField(true);
+        
+        toast.error('Peppol ID niet automatisch gevonden', {
+          description: 'Vul het Peppol ID handmatig in of vraag de klant naar hun Peppol identificatie.'
+        });
+      }
+    } catch (error) {
+      console.error('Fout bij Peppol lookup:', error);
+      setPeppolLookupStatus({
+        loading: false,
+        result: null,
+        error: 'Fout bij automatische lookup. Probeer handmatige invoer.'
+      });
+      setShowPeppolField(true);
+      
+      toast.error('Fout bij automatische Peppol lookup');
     }
   };
 
@@ -124,7 +205,7 @@ export function InvoiceGenerator({ deal, onInvoiceSent }: InvoiceGeneratorProps)
         subtotalAmount: parseFloat(invoiceData.amount),
         
         supplier: {
-          name: 'Uw Bedrijf BV',
+          name: 'PepHub BV',
           vatNumber: 'NL999999999B01',
           registrationNumber: '99999999',
           address: {
@@ -161,7 +242,20 @@ export function InvoiceGenerator({ deal, onInvoiceSent }: InvoiceGeneratorProps)
 
       const result = await peppolService.sendInvoice(peppolInvoiceData);
       
-      toast.success('Peppol-factuur succesvol verzonden!');
+      // Create timeline event in HubSpot
+      await hubspotService.createTimelineEvent(deal.id, {
+        eventType: 'peppol_invoice_sent',
+        title: 'Peppol-factuur verzonden via Pephub',
+        description: `Factuur ${invoiceData.invoiceNumber} verzonden naar ${customerInfo.name}`,
+        invoiceNumber: invoiceData.invoiceNumber,
+        amount: calculateTotal(),
+        peppolId: invoiceData.customerPeppolId,
+        status: result.status
+      });
+      
+      toast.success('Peppol-factuur succesvol verzonden!', {
+        description: `Factuur ${invoiceData.invoiceNumber} is verzonden naar ${customerInfo.name}`
+      });
       onInvoiceSent(result);
       
     } catch (error) {
@@ -258,40 +352,124 @@ export function InvoiceGenerator({ deal, onInvoiceSent }: InvoiceGeneratorProps)
               />
             </div>
             
-            <div className="grid grid-cols-2 gap-4">
-              <div className="space-y-2">
-                <Label htmlFor="customerPeppolId">Peppol ID *</Label>
-                <div className="relative">
-                  <Input
-                    id="customerPeppolId"
-                    value={invoiceData.customerPeppolId}
-                    onChange={(e) => setInvoiceData(prev => ({ ...prev, customerPeppolId: e.target.value }))}
-                    placeholder="iso6523-actorid-upis::0088::1234567890123"
-                    className={`pr-8 ${
-                      invoiceData.customerPeppolId
-                        ? validationStatus.peppolId
-                          ? 'border-success'
-                          : 'border-destructive'
-                        : ''
-                    }`}
-                  />
-                  {invoiceData.customerPeppolId && (
-                    <div className="absolute right-2 top-1/2 transform -translate-y-1/2">
-                      {validationStatus.peppolId ? (
-                        <CheckCircle className="h-4 w-4 text-success" />
-                      ) : (
-                        <AlertTriangle className="h-4 w-4 text-destructive" />
-                      )}
-                    </div>
-                  )}
+            {/* Peppol Lookup Status */}
+            {peppolLookupStatus.loading && (
+              <div className="p-3 bg-blue-50 border border-blue-200 rounded-lg">
+                <div className="flex items-center gap-2 text-blue-700">
+                  <Loader className="h-4 w-4 animate-spin" />
+                  <span className="text-sm font-medium">Peppol ID automatisch zoeken...</span>
                 </div>
-                {invoiceData.customerPeppolId && !validationStatus.peppolId && (
-                  <p className="text-xs text-destructive flex items-center gap-1">
-                    <AlertTriangle className="h-3 w-3" />
-                    Formaat: iso6523-actorid-upis::scheme::value
-                  </p>
-                )}
+                <p className="text-xs text-blue-600 mt-1">
+                  Zoeken in Peppol directory en Recommand API op basis van klantgegevens
+                </p>
               </div>
+            )}
+
+            {peppolLookupStatus.result?.found && (
+              <div className="p-3 bg-green-50 border border-green-200 rounded-lg">
+                <div className="flex items-center gap-2 text-green-700">
+                  <CheckCircle className="h-4 w-4" />
+                  <span className="text-sm font-medium">Peppol ID automatisch gevonden</span>
+                </div>
+                <p className="text-xs text-green-600 mt-1">
+                  Gevonden via {peppolLookupStatus.result.source === 'peppol_directory' ? 'Peppol directory' : 
+                    peppolLookupStatus.result.source === 'recommand_api' ? 'Recommand API' : 'HubSpot cache'} 
+                  • Betrouwbaarheid: {peppolLookupStatus.result.confidence}
+                </p>
+              </div>
+            )}
+
+            {peppolLookupStatus.error && (
+              <div className="p-3 bg-amber-50 border border-amber-200 rounded-lg">
+                <div className="flex items-center gap-2 text-amber-700">
+                  <AlertTriangle className="h-4 w-4" />
+                  <span className="text-sm font-medium">Peppol ID niet gevonden</span>
+                </div>
+                <p className="text-xs text-amber-600 mt-1">{peppolLookupStatus.error}</p>
+                <div className="mt-2 flex gap-2">
+                  <button
+                    onClick={() => setShowPeppolField(true)}
+                    className="text-xs text-amber-700 hover:text-amber-800 underline"
+                  >
+                    Handmatig invoeren
+                  </button>
+                  <a
+                    href="https://peppol.org/directory"
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="text-xs text-amber-700 hover:text-amber-800 underline flex items-center gap-1"
+                  >
+                    Peppol directory <ExternalLink className="h-3 w-3" />
+                  </a>
+                </div>
+              </div>
+            )}
+            
+            <div className="grid grid-cols-2 gap-4">
+              {(showPeppolField || invoiceData.customerPeppolId) && (
+                <div className="space-y-2">
+                  <Label htmlFor="customerPeppolId" className="flex items-center gap-2">
+                    Peppol ID *
+                    <div className="group relative">
+                      <Info className="h-3 w-3 text-muted-foreground cursor-help" />
+                      <div className="invisible group-hover:visible absolute bottom-5 left-0 z-10 w-64 p-2 bg-popover border border-border rounded-md shadow-md text-xs">
+                        Indien leeg, wordt het Peppol-ID automatisch gezocht op basis van klantinformatie
+                      </div>
+                    </div>
+                  </Label>
+                  <div className="relative">
+                    <Input
+                      id="customerPeppolId"
+                      value={invoiceData.customerPeppolId}
+                      onChange={(e) => setInvoiceData(prev => ({ ...prev, customerPeppolId: e.target.value }))}
+                      placeholder="0088:1234567890123"
+                      className={`pr-8 ${
+                        invoiceData.customerPeppolId
+                          ? validationStatus.peppolId
+                            ? 'border-success'
+                            : 'border-destructive'
+                          : ''
+                      }`}
+                    />
+                    {invoiceData.customerPeppolId && (
+                      <div className="absolute right-2 top-1/2 transform -translate-y-1/2">
+                        {validationStatus.peppolId ? (
+                          <CheckCircle className="h-4 w-4 text-success" />
+                        ) : (
+                          <AlertTriangle className="h-4 w-4 text-destructive" />
+                        )}
+                      </div>
+                    )}
+                  </div>
+                  {invoiceData.customerPeppolId && !validationStatus.peppolId && (
+                    <p className="text-xs text-destructive flex items-center gap-1">
+                      <AlertTriangle className="h-3 w-3" />
+                      Formaat: 0088:1234567890123
+                    </p>
+                  )}
+                  <div className="flex gap-2">
+                    <button
+                      type="button"
+                      onClick={() => deal.associations?.companies?.[0] && performPeppolLookup({ properties: customerInfo })}
+                      disabled={peppolLookupStatus.loading}
+                      className="text-xs text-primary hover:text-primary/80 underline flex items-center gap-1"
+                    >
+                      <Search className="h-3 w-3" />
+                      Opnieuw zoeken
+                    </button>
+                  </div>
+                </div>
+              )}
+              
+              {!showPeppolField && !invoiceData.customerPeppolId && !peppolLookupStatus.loading && (
+                <div className="space-y-2">
+                  <Label>Peppol ID</Label>
+                  <div className="h-10 px-3 py-2 bg-muted/50 rounded-md flex items-center justify-between text-sm">
+                    <span className="text-muted-foreground">Wordt automatisch gezocht...</span>
+                    <Loader className="h-4 w-4 animate-spin text-muted-foreground" />
+                  </div>
+                </div>
+              )}
               <div className="space-y-2">
                 <Label htmlFor="customerVatNumber">BTW-nummer</Label>
                 <div className="relative">
@@ -381,13 +559,13 @@ export function InvoiceGenerator({ deal, onInvoiceSent }: InvoiceGeneratorProps)
         
         <div className="flex items-center justify-between">
           <div className="text-sm text-muted-foreground">
-            <p>Facturen worden namens Uw Bedrijf BV via het Peppol-netwerk verzonden.</p>
+            <p>Facturen worden namens PepHub BV via het Peppol-netwerk verzonden.</p>
           </div>
           
           <AlertDialog>
             <AlertDialogTrigger asChild>
               <Button
-                disabled={loading || !validationStatus.peppolId || !customerInfo.name}
+                disabled={loading || !invoiceData.customerPeppolId || !validationStatus.peppolId || !customerInfo.name}
                 size="lg"
                 className="gap-2"
               >
@@ -425,6 +603,12 @@ export function InvoiceGenerator({ deal, onInvoiceSent }: InvoiceGeneratorProps)
                     <p className="text-xs text-muted-foreground">
                       Deze factuur wordt verzonden namens PepHub BV via het beveiligde Peppol-netwerk.
                     </p>
+                    {peppolLookupStatus.result && (
+                      <p className="text-xs text-muted-foreground mt-1">
+                        Peppol ID gevonden via {peppolLookupStatus.result.source === 'peppol_directory' ? 'Peppol directory' : 
+                          peppolLookupStatus.result.source === 'recommand_api' ? 'Recommand API' : 'HubSpot cache'}
+                      </p>
+                    )}
                   </div>
                 </AlertDialogDescription>
               </AlertDialogHeader>
