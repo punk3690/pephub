@@ -60,7 +60,7 @@ const Index = () => {
                 <Zap className="h-5 w-5 text-primary-foreground" />
               </div>
               <div>
-                <h1 className="text-lg font-semibold">HubSpot Peppol</h1>
+                <h1 className="text-lg font-semibold">Pephub</h1>
                 <p className="text-xs text-muted-foreground">Facturen via Peppol-netwerk</p>
               </div>
             </div>
@@ -152,7 +152,7 @@ const Index = () => {
         <div className="max-w-6xl mx-auto px-4 py-6">
           <div className="flex items-center justify-between text-sm text-muted-foreground">
             <div>
-              <p>Facturen worden verzonden namens <strong>Uw Bedrijf BV</strong> via het Peppol-netwerk</p>
+              <p>Facturen worden verzonden namens <strong>PepHub BV</strong> via het Peppol-netwerk</p>
             </div>
             <div className="flex items-center gap-4">
               <Badge variant="outline" className="gap-1">
