@@ -8,6 +8,8 @@ import { Badge } from '@/components/ui/badge';
 import { Separator } from '@/components/ui/separator';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from '@/components/ui/alert-dialog';
 import { Send, Loader, FileText, CheckCircle, AlertTriangle, Shield, Search, Info, ExternalLink } from 'lucide-react';
+import { InvoiceConfirmation } from './InvoiceConfirmation';
+import { ComplianceFooter } from './ComplianceFooter';
 import { HubSpotDeal, PeppolInvoiceData } from '@/types/hubspot';
 import { peppolService } from '@/services/peppolService';
 import { hubspotService } from '@/services/hubspotService';
@@ -191,6 +193,11 @@ export function InvoiceGenerator({ deal, onInvoiceSent }: InvoiceGeneratorProps)
       return;
     }
 
+    // Show confirmation dialog first
+    setShowConfirmDialog(true);
+  };
+
+  const confirmAndSendInvoice = async () => {
     setLoading(true);
     
     try {
@@ -240,17 +247,43 @@ export function InvoiceGenerator({ deal, onInvoiceSent }: InvoiceGeneratorProps)
         }]
       };
 
+      // Create audit log entry
+      await hubspotService.createAuditLogEntry(deal.id, 'invoice_send_initiated', {
+        invoiceNumber: invoiceData.invoiceNumber,
+        customerName: customerInfo.name,
+        amount: calculateTotal(),
+        peppolId: invoiceData.customerPeppolId
+      });
+
       const result = await peppolService.sendInvoice(peppolInvoiceData);
       
-      // Create timeline event in HubSpot
+      // Create detailed timeline event in HubSpot
       await hubspotService.createTimelineEvent(deal.id, {
         eventType: 'peppol_invoice_sent',
-        title: 'Peppol-factuur verzonden via Pephub',
-        description: `Factuur ${invoiceData.invoiceNumber} verzonden naar ${customerInfo.name}`,
+        title: 'Peppol-factuur verzonden via PepHub',
+        description: `Factuur ${invoiceData.invoiceNumber} verzonden naar ${customerInfo.name} via Peppol-netwerk`,
         invoiceNumber: invoiceData.invoiceNumber,
         amount: calculateTotal(),
         peppolId: invoiceData.customerPeppolId,
-        status: result.status
+        status: result.status,
+        peppolMessageId: result.peppolMessageId,
+        recipientId: result.recipientId
+      });
+
+      // Update deal custom properties
+      await hubspotService.updateDealCustomProperties(deal.id, {
+        peppol_invoice_last_status: result.status,
+        peppol_invoice_last_sent_date: new Date().toISOString(),
+        peppol_invoice_count: 1, // In production, this would increment
+        peppol_invoice_total_amount: calculateTotal(),
+        peppol_invoice_last_number: invoiceData.invoiceNumber
+      });
+
+      // Create success audit log
+      await hubspotService.createAuditLogEntry(deal.id, 'invoice_sent_success', {
+        invoiceNumber: invoiceData.invoiceNumber,
+        status: result.status,
+        peppolMessageId: result.peppolMessageId
       });
       
       toast.success('Peppol-factuur succesvol verzonden!', {
@@ -260,7 +293,32 @@ export function InvoiceGenerator({ deal, onInvoiceSent }: InvoiceGeneratorProps)
       
     } catch (error) {
       console.error('Fout bij verzenden factuur:', error);
-      toast.error('Fout bij verzenden factuur');
+      
+      // Create error audit log
+      await hubspotService.createAuditLogEntry(deal.id, 'invoice_send_failed', {
+        invoiceNumber: invoiceData.invoiceNumber,
+        error: error instanceof Error ? error.message : 'Unknown error'
+      });
+
+      // Create error timeline event
+      await hubspotService.createTimelineEvent(deal.id, {
+        eventType: 'peppol_invoice_error',
+        title: 'Fout bij verzenden Peppol-factuur',
+        description: `Factuur ${invoiceData.invoiceNumber} kon niet worden verzonden`,
+        invoiceNumber: invoiceData.invoiceNumber,
+        status: 'failed',
+        errorMessage: error instanceof Error ? error.message : 'Unknown error'
+      });
+
+      // Update deal properties with error status
+      await hubspotService.updateDealCustomProperties(deal.id, {
+        peppol_invoice_last_status: 'failed',
+        peppol_invoice_last_error: error instanceof Error ? error.message : 'Unknown error'
+      });
+      
+      toast.error('Fout bij verzenden factuur', {
+        description: 'De factuur kon niet worden verzonden. Probeer het opnieuw.'
+      });
     } finally {
       setLoading(false);
     }

@@ -954,6 +954,82 @@ export class HubSpotService {
     }
   }
 
+  async updateDealCustomProperties(dealId: string, properties: { [key: string]: any }): Promise<boolean> {
+    try {
+      // Mock updating HubSpot deal custom properties
+      await new Promise(resolve => setTimeout(resolve, 400));
+      
+      console.log(`Updating deal ${dealId} with custom properties:`, properties);
+      
+      // In production, this would call HubSpot API to update deal properties
+      // await this.apiCall(`/deals/${dealId}`, {
+      //   properties: {
+      //     peppol_invoice_last_status: properties.lastStatus,
+      //     peppol_invoice_last_sent_date: properties.lastSentDate,
+      //     peppol_invoice_count: properties.invoiceCount,
+      //     peppol_invoice_total_amount: properties.totalAmount,
+      //     peppol_invoice_last_error: properties.lastError || null,
+      //     ...properties
+      //   }
+      // });
+      
+      return true;
+    } catch (error) {
+      console.error('Fout bij updaten custom properties:', error);
+      return false;
+    }
+  }
+
+  async createAuditLogEntry(dealId: string, action: string, details: any): Promise<boolean> {
+    try {
+      // Mock creating audit log entry
+      await new Promise(resolve => setTimeout(resolve, 200));
+      
+      const auditEntry = {
+        dealId,
+        action,
+        details,
+        timestamp: new Date().toISOString(),
+        userId: this.context?.userId,
+        userEmail: this.context?.userEmail,
+        portalId: this.context?.portalId
+      };
+      
+      console.log('Audit log entry created:', auditEntry);
+      
+      // In production, this would be stored in HubSpot custom objects or external audit system
+      // await this.apiCall('/audit-logs', auditEntry);
+      
+      return true;
+    } catch (error) {
+      console.error('Fout bij aanmaken audit log:', error);
+      return false;
+    }
+  }
+
+  async retryFailedInvoice(dealId: string, invoiceId: string): Promise<boolean> {
+    try {
+      // Mock retry functionality
+      await new Promise(resolve => setTimeout(resolve, 1000));
+      
+      console.log(`Retrying failed invoice ${invoiceId} for deal ${dealId}`);
+      
+      // Create timeline event for retry attempt
+      await this.createTimelineEvent(dealId, {
+        eventType: 'peppol_invoice_retry',
+        title: 'Peppol-factuur opnieuw verzenden',
+        description: `Poging tot opnieuw verzenden van factuur ${invoiceId}`,
+        invoiceId,
+        retryAttempt: true
+      });
+      
+      return true;
+    } catch (error) {
+      console.error('Fout bij opnieuw verzenden factuur:', error);
+      return false;
+    }
+  }
+
   getContext(): HubSpotAppContext | null {
     return this.context;
   }
