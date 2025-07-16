@@ -1,94 +1,20 @@
 import { PeppolInvoiceData, PeppolSendStatus } from '@/types/hubspot';
+import { recommandService } from './recommandService';
 
 // Mock Recommand API service for development
 export class PeppolService {
   private readonly baseUrl = '/api/peppol'; // Backend endpoint
   
   async sendInvoice(invoiceData: PeppolInvoiceData): Promise<PeppolSendStatus> {
-    // Mock API call - in production this would call your backend
-    await new Promise(resolve => setTimeout(resolve, 2000));
-    
-    const sendStatus: PeppolSendStatus = {
-      id: 'peppol_' + Date.now(),
-      dealId: invoiceData.dealId,
-      invoiceNumber: invoiceData.invoiceNumber,
-      status: 'sent',
-      sentAt: new Date().toISOString(),
-      peppolMessageId: 'MSG_' + Math.random().toString(36).substr(2, 9),
-      recipientId: invoiceData.customer.peppolId || 'Unknown'
-    };
-
-    // Mock random status scenarios for demo
-    const random = Math.random();
-    if (random < 0.1) {
-      sendStatus.status = 'failed';
-      sendStatus.errorMessage = 'Recipient Peppol ID not found in network';
-    } else if (random < 0.3) {
-      sendStatus.status = 'pending';
-    } else {
-      sendStatus.status = 'delivered';
-      sendStatus.deliveredAt = new Date(Date.now() + 5 * 60 * 1000).toISOString();
-    }
-
-    return sendStatus;
+    return await recommandService.sendInvoice(invoiceData);
   }
 
   async getInvoiceStatus(peppolId: string): Promise<PeppolSendStatus | null> {
-    // Mock status check
-    await new Promise(resolve => setTimeout(resolve, 500));
-    
-    return {
-      id: peppolId,
-      dealId: 'deal_123',
-      invoiceNumber: 'INV-2024-001',
-      status: 'delivered',
-      sentAt: '2024-01-31T10:00:00Z',
-      deliveredAt: '2024-01-31T10:05:23Z',
-      peppolMessageId: 'MSG_ABC123',
-      recipientId: '0088:7318900000000'
-    };
+    return await recommandService.getInvoiceStatus(peppolId);
   }
 
   async getSentInvoices(dealId?: string): Promise<PeppolSendStatus[]> {
-    // Mock invoice history
-    await new Promise(resolve => setTimeout(resolve, 500));
-    
-    const mockInvoices: PeppolSendStatus[] = [
-      {
-        id: 'peppol_001',
-        dealId: 'deal_123',
-        invoiceNumber: 'INV-2024-001',
-        status: 'delivered',
-        sentAt: '2024-01-31T10:00:00Z',
-        deliveredAt: '2024-01-31T10:05:23Z',
-        peppolMessageId: 'MSG_ABC123',
-        recipientId: '0088:7318900000000'
-      },
-      {
-        id: 'peppol_002',
-        dealId: 'deal_456',
-        invoiceNumber: 'INV-2024-002',
-        status: 'sent',
-        sentAt: '2024-02-15T14:30:00Z',
-        peppolMessageId: 'MSG_DEF456',
-        recipientId: '0088:7318900000001'
-      },
-      {
-        id: 'peppol_003',
-        dealId: 'deal_789',
-        invoiceNumber: 'INV-2024-003',
-        status: 'failed',
-        sentAt: '2024-02-20T09:15:00Z',
-        errorMessage: 'Invalid VAT number format',
-        recipientId: '0088:7318900000002'
-      }
-    ];
-
-    if (dealId) {
-      return mockInvoices.filter(invoice => invoice.dealId === dealId);
-    }
-
-    return mockInvoices;
+    return await recommandService.getSentInvoices(dealId);
   }
 
   generateUBLPayload(invoiceData: PeppolInvoiceData): string {

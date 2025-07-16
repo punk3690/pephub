@@ -1,4 +1,5 @@
 import { HubSpotCompany } from '@/types/hubspot';
+import { recommandService } from './recommandService';
 
 export interface PeppolLookupResult {
   peppolId?: string;
@@ -144,57 +145,7 @@ export class PeppolLookupService {
    * Lookup via Recommand API
    */
   private async lookupFromRecommandAPI(searchParams: PeppolDirectorySearchParams): Promise<PeppolLookupResult> {
-    try {
-      // Mock Recommand API call
-      await new Promise(resolve => setTimeout(resolve, 2000));
-      
-      // In production, this would call the actual Recommand API endpoint
-      const response = await fetch(`${this.baseUrl}/recommand`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify(searchParams)
-      });
-
-      if (!response.ok) {
-        throw new Error('Recommand API lookup failed');
-      }
-
-      const data = await response.json();
-      
-      if (data.peppolId) {
-        return {
-          peppolId: data.peppolId,
-          found: true,
-          source: 'recommand_api',
-          confidence: 'high',
-          metadata: data.metadata
-        };
-      }
-
-      return { found: false, source: 'recommand_api', confidence: 'low' };
-      
-    } catch (error) {
-      console.error('Fout bij Recommand API lookup:', error);
-      // Mock fallback result
-      const random = Math.random();
-      if (random > 0.8) {
-        return {
-          peppolId: `0088:${Math.random().toString().slice(2, 15)}`,
-          found: true,
-          source: 'recommand_api',
-          confidence: 'medium',
-          metadata: {
-            vatNumber: searchParams.vatNumber,
-            companyName: searchParams.companyName,
-            country: searchParams.country
-          }
-        };
-      }
-      
-      return { found: false, source: 'recommand_api', confidence: 'low' };
-    }
+    return await recommandService.lookupPeppolId(searchParams);
   }
 
   /**
@@ -214,21 +165,7 @@ export class PeppolLookupService {
    * Validate if a Peppol ID exists in the network
    */
   async validatePeppolIdInNetwork(peppolId: string): Promise<boolean> {
-    try {
-      await new Promise(resolve => setTimeout(resolve, 500));
-      
-      // Mock validation - in production this would check the Peppol network
-      const validPatterns = [
-        /^0088:[0-9]{13}$/,
-        /^0192:[A-Z]{2}[0-9]{8}$/,
-        /^9956:[0-9]{9}$/
-      ];
-      
-      return validPatterns.some(pattern => pattern.test(peppolId));
-    } catch (error) {
-      console.error('Fout bij Peppol ID validatie:', error);
-      return false;
-    }
+    return await recommandService.validatePeppolIdInNetwork(peppolId);
   }
 }
 
