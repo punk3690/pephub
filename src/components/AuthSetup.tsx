@@ -105,7 +105,7 @@ export function AuthSetup({ onAuthComplete }: AuthSetupProps) {
           <div className="p-4 bg-muted/30 rounded-lg border-l-4 border-l-primary">
             <p className="text-sm text-muted-foreground">
               <strong>Let op:</strong> Alle Peppol-facturen worden verzonden namens 
-              <Badge variant="outline" className="mx-1">Uw Bedrijf BV</Badge>
+              <Badge variant="outline" className="mx-1">PepHub BV</Badge>
               via onze centrale Recommand API-integratie.
             </p>
           </div>
