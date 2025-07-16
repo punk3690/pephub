@@ -5,6 +5,7 @@ export class RecommandService {
   private readonly baseUrl = 'https://api.recommand.com/v1';
   private readonly teamId = 'team_01K098HBVJ9HA4GKWBDXR0CHV2';
   private readonly apiKey = 'key_01K098M5SZEF5C7HMSGTG8RKJG';
+  private readonly clientSecret = 'secret_ced0963ce9574edb977cc6a28b203ca6';
 
   private getHeaders(): HeadersInit {
     return {

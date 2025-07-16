@@ -5,8 +5,8 @@ export class HubSpotService {
   private accessToken: string | null = null;
   private refreshToken: string | null = null;
   private context: HubSpotAppContext | null = null;
-  private readonly clientId = 'YOUR_HUBSPOT_CLIENT_ID'; // Replace with actual Client ID
-  private readonly clientSecret = 'YOUR_HUBSPOT_CLIENT_SECRET'; // Replace with actual Client Secret  
+  private readonly clientId = 'eeb793c8-02cb-4235-a555-dc44a0ffb36c';
+  private readonly clientSecret = 'c1d56223-2584-4c63-afd4-a2cfd0213640';
   private readonly redirectUri = window.location.origin + '/oauth/callback';
   private readonly scope = 'crm.objects.companies.read crm.objects.deals.read crm.objects.contacts.read timeline';
 
